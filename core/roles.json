@@ -1,0 +1,13 @@
+{
+    "scopes":{
+        "coding":{
+            "model": "gemini-2.5-flash"
+        },
+        "planning":{
+            "model": "gemini-2.5-flash"
+        },
+        "reviewer":{
+            "model": "gemini-2.5-flash"
+        }
+    }
+}
