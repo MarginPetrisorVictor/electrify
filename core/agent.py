@@ -46,9 +46,9 @@ class PlannerAgent(Agent):
             self.sub_agents[scope] = Agent(name=name, scope=scope)
         return self.sub_agents[scope]
 
-    def delegate(self, scope: str, instruction: str, context: dict = None) -> str:
+    def delegate(self, name: str, scope: str, instruction: str, context: dict = None) -> str:
         """Sends a typed AgentTask to a sub-agent."""
-        agent = self.get_or_create_subagent(scope)
+        agent = self.get_or_create_subagent(name, scope)
         task = AgentTask(instruction=instruction, context=context or {})
         return agent.run(task)
 

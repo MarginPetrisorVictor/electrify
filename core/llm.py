@@ -11,11 +11,6 @@ _ROOT_DIR = _CORE_DIR.parent
 _ROLES_PATH = _CORE_DIR / "roles.json"
 _PROMPTS_DIR = _ROOT_DIR / "prompts"
 
-
-class SelectedAgent:
-    llm: ChatGoogleGenerativeAI
-    prompt: str
-
 def _load_roles() -> dict:
     with _ROLES_PATH.open("r", encoding="utf-8") as file:
         return json.load(file)
@@ -36,7 +31,7 @@ def _get_base_llm(model_name: str) -> ChatGoogleGenerativeAI:
     return ChatGoogleGenerativeAI(model=model_name, max_retries=3)
 
 
-def model_selector(scope: str) -> SelectedAgent:
+def model_selector(scope: str) -> tuple[ChatGoogleGenerativeAI, str]:
     roles = _load_roles()
     scope_config = roles.get("scopes").get(scope)
 
