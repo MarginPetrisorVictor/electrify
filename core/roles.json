@@ -11,6 +11,10 @@
         "reviewer": {
             "model": "gemini-2.5-flash",
             "prompt_file": "reviewer.md"
+        },
+        "testing": {
+            "model": "gemini-2.5-flash",
+            "prompt_file": "testing.md"
         }
     }
 }

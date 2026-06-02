@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from llm import model_selector
+from core.llm import model_selector
 
 class AgentTask(BaseModel):
     """Structured communication payload between agents."""
@@ -51,4 +51,3 @@ class PlannerAgent(Agent):
         agent = self.get_or_create_subagent(name, scope)
         task = AgentTask(instruction=instruction, context=context or {})
         return agent.run(task)
-
