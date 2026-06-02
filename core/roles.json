@@ -1,0 +1,20 @@
+{
+    "scopes": {
+        "coding": {
+            "model": "gemini-2.5-flash",
+            "prompt_file": "coding.md"
+        },
+        "planning": {
+            "model": "gemini-2.5-flash",
+            "prompt_file": "planning.md"
+        },
+        "reviewer": {
+            "model": "gemini-2.5-flash",
+            "prompt_file": "reviewer.md"
+        },
+        "testing": {
+            "model": "gemini-2.5-flash",
+            "prompt_file": "testing.md"
+        }
+    }
+}
