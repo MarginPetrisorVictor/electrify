@@ -1,14 +1,19 @@
 import sys
 import os
 import typer
+from rich.console import Console
+from rich.markdown import Markdown
 
 # Ensure imports work when running from the CLI
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from memory.manager import MemoryManager
+from core.orchestrator import OrchestratorAgent
+from execution.dispatcher import Dispatcher
 
 app = typer.Typer(help="Electrify AI Workflow Orchestrator")
 memory = MemoryManager()
+console = Console()
 
 @app.command()
 def start():
@@ -46,26 +51,39 @@ def start():
         session_id = memory.create_session(name)
         typer.secho(f"✅ Created new session: {name}", fg=typer.colors.GREEN)
 
+    # Boot up the orchestrator
+    orchestrator = OrchestratorAgent()
+
     # REPL Loop
     while True:
         try:
             user_input = typer.prompt("\n(electrify) You", type=str)
             
-            if user_input.lower() in ['exit', 'quit', '/quit']:
+            if user_input.lower() in ['exit', '/quit']:
                 typer.secho("Goodbye! ⚡", fg=typer.colors.BRIGHT_BLUE)
                 break
             
-            # 1. Save user query to memory
+            # 1. Fetch recent history (last 10 turns)
+            session_data = memory.get_session(session_id)
+            history = session_data.get("history", [])[-10:] if session_data else []
+            
+            # 2. Save user query to memory
             memory.save_to_session(session_id, role="user", content=user_input)
             
-            # 2. Orchestrator Logic (Placeholder for Phase 2 & 3)
-            typer.secho("\n[System] Orchestrating workflows... (Under Construction)", fg=typer.colors.YELLOW)
+            # 3. Call Orchestrator
+            decision = orchestrator.decide(user_input, history)
             
-            response_content = "This is a placeholder response. In Phase 2, the Orchestrator LLM will parse your request and run parallel workflows here."
-            typer.secho(f"[Assistant] {response_content}", fg=typer.colors.GREEN)
+            # 4. Print the conversation reply
+            typer.secho("\n[Electrify]", fg=typer.colors.BRIGHT_BLUE, bold=True)
+            console.print(Markdown(decision.message))
             
-            # 3. Save assistant response to memory
-            memory.save_to_session(session_id, role="assistant", content=response_content)
+            artifacts = {}
+            # 5. Run dispatcher if a workflow was requested
+            if decision.action != "chat":
+                artifacts = Dispatcher.run(decision)
+            
+            # 6. Save assistant response and artifacts to memory
+            memory.save_to_session(session_id, role="assistant", content=decision.message, workflow_results=artifacts)
             
         except typer.Abort:
             typer.secho("\nGoodbye! ⚡", fg=typer.colors.BRIGHT_BLUE)
