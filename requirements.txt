@@ -6,3 +6,4 @@ python-dotenv
 typer
 fastapi
 uvicorn
+pymongo
