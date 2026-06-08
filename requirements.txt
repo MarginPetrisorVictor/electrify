@@ -7,3 +7,5 @@ typer
 fastapi
 uvicorn
 pymongo
+rich
+pathspec
