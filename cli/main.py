@@ -3,17 +3,16 @@ import os
 import typer
 from rich.console import Console
 from rich.markdown import Markdown
-from datetime import datetime  # Fixed the import so session naming works!
-from dotenv import load_dotenv
-
-load_dotenv()
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from memory.manager import MemoryManager
+from core.orchestrator import OrchestratorAgent
+from execution.dispatcher import Dispatcher
 
 app = typer.Typer(help="Electrify AI Workflow Orchestrator")
 memory = MemoryManager()
+console = Console()
 
 @app.callback(invoke_without_command=True)
 def start():
@@ -52,6 +51,9 @@ def start():
 
     orchestrator = OrchestratorAgent()
 
+    # Boot up the orchestrator
+    orchestrator = OrchestratorAgent()
+
     # REPL Loop
     while True:
         try:
@@ -59,31 +61,29 @@ def start():
             user_input = typer.prompt("\n(electrify) You", type=str)
             
             if user_input.lower() in ['exit', '/quit']:
-                # Changed \\n to \n
-                typer.secho("\nGoodbye! ⚡", fg=typer.colors.BRIGHT_BLUE)
+                typer.secho("Goodbye! ⚡", fg=typer.colors.BRIGHT_BLUE)
                 break
             
-            # Fetch recent history (last 10 turns)
+            # 1. Fetch recent history (last 10 turns)
             session_data = memory.get_session(session_id)
             history = session_data.get("history", [])[-10:] if session_data else []
             
-            # Save user query to memory
+            # 2. Save user query to memory
             memory.save_to_session(session_id, role="user", content=user_input)
             
-            # Call Orchestrator
+            # 3. Call Orchestrator
             decision = orchestrator.decide(user_input, history)
             
-            # Print the conversation reply
-            # Changed \\n to \n
+            # 4. Print the conversation reply
             typer.secho("\n[Electrify]", fg=typer.colors.BRIGHT_BLUE, bold=True)
             console.print(Markdown(decision.message))
             
             artifacts = {}
-            # Run dispatcher if a workflow was requested
+            # 5. Run dispatcher if a workflow was requested
             if decision.action != "chat":
                 artifacts = Dispatcher.run(decision)
             
-            # Save assistant response and artifacts to memory
+            # 6. Save assistant response and artifacts to memory
             memory.save_to_session(session_id, role="assistant", content=decision.message, workflow_results=artifacts)
             
         except typer.Abort:
