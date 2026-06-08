@@ -1,17 +1,22 @@
 from setuptools import setup, find_packages
 
-def read_requirements():
-    with open('requirements.txt', 'r') as req:
-        return req.read().splitlines()
-
 setup(
     name="electrify",
-    version="0.1.0",
+    version="0.1.1",
     packages=find_packages(),
-    install_requires=read_requirements(),
+    install_requires=[
+        "typer",
+        "rich",
+        "langchain-google-genai",
+        "langchain-core",
+        "langgraph",
+        "pymongo",
+        "python-dotenv",
+        "pathspec"
+    ],
     entry_points={
-        'console_scripts': [
-            'arise=cli.main:app',
+        "console_scripts": [
+            "arise = cli.main:app",
         ],
     },
 )

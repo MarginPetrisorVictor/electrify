@@ -6,7 +6,7 @@ from bson.objectid import ObjectId
 class MemoryManager:
     def __init__(self):
         # Assumes local MongoDB instances by default
-        mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+        mongo_uri = os.getenv("MONGO_URI", os.getenv("MONGO_CONN_STRING"))
         self.client = MongoClient(mongo_uri)
         self.db = self.client["electrify_memory"]
         self.sessions = self.db["sessions"]

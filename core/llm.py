@@ -4,8 +4,6 @@ from pathlib import Path
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-load_dotenv()
-
 _CORE_DIR = Path(__file__).resolve().parent
 _ROOT_DIR = _CORE_DIR.parent
 _ROLES_PATH = _CORE_DIR / "roles.json"

@@ -4,7 +4,6 @@ import typer
 from rich.console import Console
 from rich.markdown import Markdown
 
-# Ensure imports work when running from the CLI
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from memory.manager import MemoryManager
@@ -15,7 +14,7 @@ app = typer.Typer(help="Electrify AI Workflow Orchestrator")
 memory = MemoryManager()
 console = Console()
 
-@app.command()
+@app.callback(invoke_without_command=True)
 def start():
     typer.secho("⚡ Welcome to Electrify Orchestrator ⚡", fg=typer.colors.BRIGHT_BLUE, bold=True)
     
@@ -30,26 +29,27 @@ def start():
     
     # Prompt the user to resume a session or start a new one
     if sessions:
+        # Changed \\n to \n
         typer.secho("\n📋 Existing Sessions:", fg=typer.colors.CYAN)
         for idx, s in enumerate(sessions):
-            # Display up to 5 of the most recent sessions
             if idx >= 5:
                 break
-            # Format datetime for better readability
             date_str = s['updated_at'].strftime("%Y-%m-%d %H:%M")
-            typer.echo(f"  [{idx}] {s['name']} (Last updated: {date_str})")
-            
-        choice = typer.prompt("\nSelect a session number to resume, or type 'n' for a new session", default="n")
+            typer.echo(f"  [{idx}] {s['name']} (Last updated: {date_str}) - ID: {s['_id']}")
         
-        if choice.lower() != 'n' and choice.isdigit() and int(choice) < len(sessions):
-            session_id = str(sessions[int(choice)]['_id'])
-            typer.secho(f"✅ Resuming session: {sessions[int(choice)]['name']}", fg=typer.colors.GREEN)
-    
-    # Create new session if requested or if no sessions exist
+        # Changed \\n to \n
+        choice = typer.prompt("\nChoose a session number to resume, or press Enter to create a new one", default="", show_default=False)
+        if choice.isdigit() and int(choice) < len(sessions):
+            selected_session = sessions[int(choice)]
+            session_id = str(selected_session['_id'])
+            typer.secho(f"Resuming session: {selected_session['name']}", fg=typer.colors.GREEN)
+            
     if not session_id:
-        name = typer.prompt("Enter a name for the new session")
-        session_id = memory.create_session(name)
-        typer.secho(f"✅ Created new session: {name}", fg=typer.colors.GREEN)
+        session_name = typer.prompt("Enter a name for the new session", default=f"Session_{datetime.utcnow().strftime('%Y%m%d_%H%M%M')}")
+        session_id = memory.create_session(session_name)
+        typer.secho(f"Created new session: {session_name}", fg=typer.colors.GREEN)
+
+    orchestrator = OrchestratorAgent()
 
     # Boot up the orchestrator
     orchestrator = OrchestratorAgent()
@@ -57,6 +57,7 @@ def start():
     # REPL Loop
     while True:
         try:
+            # Changed \\n to \n
             user_input = typer.prompt("\n(electrify) You", type=str)
             
             if user_input.lower() in ['exit', '/quit']:
@@ -86,6 +87,7 @@ def start():
             memory.save_to_session(session_id, role="assistant", content=decision.message, workflow_results=artifacts)
             
         except typer.Abort:
+            # Changed \\n to \n
             typer.secho("\nGoodbye! ⚡", fg=typer.colors.BRIGHT_BLUE)
             break
 
