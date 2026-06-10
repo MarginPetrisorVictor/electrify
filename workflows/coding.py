@@ -1,63 +1,98 @@
 import sys
 import os
+import time
+import typer
 from typing import TypedDict, Annotated, Sequence
-from langchain_core.messages import BaseMessage, SystemMessage
+from langchain_core.messages import BaseMessage, SystemMessage, ToolMessage, AIMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
-from langgraph.prebuilt import ToolNode
+from google.api_core.exceptions import ResourceExhausted
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.llm import model_selector
-from tools.file_tools import LOCAL_DEV_TOOLS, get_workspace_context
+from core.tools import LOCAL_DEV_TOOLS, get_workspace_context
 
-# 1. State aggregates messages chronologically
 class CodingState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
 
-# 2. Extract configuration and bind tools
 llm, system_prompt = model_selector("coding")
-llm_with_tools = llm.bind_tools(LOCAL_DEV_TOOLS)
+llm_with_retry = llm.with_retry(
+    retry_if_exception_type=(ResourceExhausted,),
+    wait_exponential_jitter=True,
+    stop_after_attempt=3
+)
+llm_with_tools = llm_with_retry.bind_tools(LOCAL_DEV_TOOLS)
 
 def call_agent(state: CodingState):
-    # INJECTION: Grab the live workspace tree
     workspace_tree = get_workspace_context()
-    
-    # Dynamically build the system prompt with the live map
     dynamic_prompt = (
         f"{system_prompt}\n\n"
-        f"--- CURRENT WORKSPACE STRUCTURE ---\n"
-        f"You are operating in this directory tree. Use your tools to read or modify these files:\n"
+        f"--- AST-PRUNED WORKSPACE STRUCTURE ---\n"
+        f"Use tools to modify files. If a command or test suite fails, look at the EXIT CODE, correct your error, and rewrite it!\n"
         f"{workspace_tree}"
     )
     
     messages = [SystemMessage(content=dynamic_prompt)] + state["messages"]
-    response = llm_with_tools.invoke(messages)
     
+    try:
+        response = llm_with_tools.invoke(messages)
+    except Exception as e:
+        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+            typer.secho("\n⚠️ [Quota Alert] Token windows maxed out. Sleeping 30 seconds...", fg=typer.colors.YELLOW)
+            time.sleep(30)
+            response = llm_with_tools.invoke(messages)
+        else:
+            raise e
+            
     return {"messages": [response]}
+
+# Node representing Human Verification (HITL Intervention)
+def human_approval_node(state: CodingState):
+    last_msg = state["messages"][-1]
+    tool_outputs = []
+    
+    for tool_call in last_msg.tool_calls:
+        t_name = tool_call["name"]
+        t_args = tool_call["args"]
+        
+        # Guardrail triggering check: intercept arbitrary shell command executions
+        if t_name == "execute_command":
+            typer.secho(f"\n🛑 [Guardrail Alert] Agent wants to execute local shell script:", fg=typer.colors.BRIGHT_RED, bold=True)
+            typer.secho(f"   Command: {t_args.get('command')}", fg=typer.colors.CYAN)
+            
+            choice = typer.prompt("Allow execution? (y/n)", default="n")
+            if choice.lower() != 'y':
+                # Block execution and report human rejection back to the model context
+                typer.secho("⛔ Command execution rejected by operator.", fg=typer.colors.RED)
+                tool_outputs.append(ToolMessage(
+                    content="ERROR: Execution aborted by user operator command. Find another way or ask permission again.",
+                    tool_call_id=tool_call["id"],
+                    name=t_name
+                ))
+                continue
+                
+        # If execution is safe or approved, execute the tool programmatically
+        for tool in LOCAL_DEV_TOOLS:
+            if tool.name == t_name:
+                res = tool.invoke(t_args)
+                tool_outputs.append(ToolMessage(content=str(res), tool_call_id=tool_call["id"], name=t_name))
+                
+    return {"messages": tool_outputs}
 
 def route_next(state: CodingState):
     last_message = state["messages"][-1]
-    # If the model requested functional calls, keep looping
     if hasattr(last_message, "tool_calls") and last_message.tool_calls:
-        return "execute_tools"
+        return "human_approval"
     return END
 
-# 3. Assemble the updated Graph workflow
+# Reconstruct workflow using the intervention engine
 workflow = StateGraph(CodingState)
-
 workflow.add_node("agent", call_agent)
-workflow.add_node("execute_tools", ToolNode(LOCAL_DEV_TOOLS))
+workflow.add_node("human_approval", human_approval_node)
 
 workflow.add_edge(START, "agent")
-workflow.add_conditional_edges(
-    "agent",
-    route_next,
-    {
-        "execute_tools": "execute_tools",
-        END: END
-    }
-)
-workflow.add_edge("execute_tools", "agent") 
+workflow.add_conditional_edges("agent", route_next, {"human_approval": "human_approval", END: END})
+workflow.add_edge("human_approval", "agent")
 
 coding_graph = workflow.compile()
