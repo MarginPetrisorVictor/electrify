@@ -1,7 +1,6 @@
 import json
 import os
 from pathlib import Path
-from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 _CORE_DIR = Path(__file__).resolve().parent

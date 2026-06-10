@@ -11,18 +11,19 @@ from google.api_core.exceptions import ResourceExhausted
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.llm import model_selector
-from core.tools import LOCAL_DEV_TOOLS, get_workspace_context
+from tools import LOCAL_DEV_TOOLS, get_workspace_context
 
 class CodingState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
 
 llm, system_prompt = model_selector("coding")
-llm_with_retry = llm.with_retry(
+llm_with_tools = llm.bind_tools(LOCAL_DEV_TOOLS)
+
+llm_with_retry = llm_with_tools.with_retry(
     retry_if_exception_type=(ResourceExhausted,),
     wait_exponential_jitter=True,
     stop_after_attempt=3
 )
-llm_with_tools = llm_with_retry.bind_tools(LOCAL_DEV_TOOLS)
 
 def call_agent(state: CodingState):
     workspace_tree = get_workspace_context()

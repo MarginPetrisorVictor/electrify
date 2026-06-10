@@ -1,10 +1,14 @@
 import sys
 import os
 import typer
+from datetime import datetime
 from rich.console import Console
 from rich.markdown import Markdown
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from dotenv import load_dotenv
+load_dotenv()
 
 from memory.manager import MemoryManager
 from core.orchestrator import OrchestratorAgent
