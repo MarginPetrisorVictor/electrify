@@ -2,6 +2,8 @@ import sys
 import os
 import time
 import typer
+from rich.console import Console
+from langchain_core.messages import ToolMessage
 from typing import TypedDict, Annotated, Sequence
 from langchain_core.messages import BaseMessage, SystemMessage, ToolMessage, AIMessage
 from langgraph.graph import StateGraph, START, END
@@ -12,6 +14,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.llm import model_selector
 from tools import LOCAL_DEV_TOOLS, get_workspace_context
+
+console = Console()
 
 class CodingState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
@@ -48,7 +52,8 @@ def call_agent(state: CodingState):
             
     return {"messages": [response]}
 
-# Node representing Human Verification (HITL Intervention)
+# Node representing Human Verification (HITL Intervention
+
 def human_approval_node(state: CodingState):
     last_msg = state["messages"][-1]
     tool_outputs = []
@@ -57,15 +62,17 @@ def human_approval_node(state: CodingState):
         t_name = tool_call["name"]
         t_args = tool_call["args"]
         
-        # Guardrail triggering check: intercept arbitrary shell command executions
         if t_name == "execute_command":
-            typer.secho(f"\n🛑 [Guardrail Alert] Agent wants to execute local shell script:", fg=typer.colors.BRIGHT_RED, bold=True)
-            typer.secho(f"   Command: {t_args.get('command')}", fg=typer.colors.CYAN)
+            # Clear a clean line and print directly to the standard output stream
+            console.print("\n\n[bold red]🛑 [Guardrail Alert] Agent wants to execute local shell script:[/bold red]")
+            console.print(f"   [cyan]Command:[/cyan] {t_args.get('command')}")
             
+            # Drop an interactive prompt into the terminal
             choice = typer.prompt("Allow execution? (y/n)", default="n")
+            console.print() # Just adds a neat spacing line
+            
             if choice.lower() != 'y':
-                # Block execution and report human rejection back to the model context
-                typer.secho("⛔ Command execution rejected by operator.", fg=typer.colors.RED)
+                console.print("⛔ [bold red]Command execution rejected by operator.[/bold red]")
                 tool_outputs.append(ToolMessage(
                     content="ERROR: Execution aborted by user operator command. Find another way or ask permission again.",
                     tool_call_id=tool_call["id"],
@@ -73,7 +80,7 @@ def human_approval_node(state: CodingState):
                 ))
                 continue
                 
-        # If execution is safe or approved, execute the tool programmatically
+        # If safe or approved, process the tool call
         for tool in LOCAL_DEV_TOOLS:
             if tool.name == t_name:
                 res = tool.invoke(t_args)

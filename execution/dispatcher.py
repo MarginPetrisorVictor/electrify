@@ -3,7 +3,6 @@ import os
 import time
 from rich.console import Console
 from rich.markdown import Markdown
-from rich.status import Status
 from langchain_core.messages import HumanMessage
 from pydantic import BaseModel, Field
 from typing import List
@@ -46,19 +45,17 @@ class Dispatcher:
             initial_state = {"messages": [HumanMessage(content=goal)]}
             final_ai_reply = ""
             
-            # Rich Dynamic UI Diagnostics integration
-            with console.status("[bold green]🧠 Processing graph nodes and verifying execution pipelines...[/bold green]") as status:
-                for event in coding_graph.stream(initial_state, stream_mode="values"):
-                    if "messages" in event:
-                        last_msg = event["messages"][-1]
-                        
-                        if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
-                            for tool_call in last_msg.tool_calls:
-                                status.update(f"[bold yellow]⚙️ Invoking Utility Tool Engine:[/bold yellow] [magenta]{tool_call['name']}[/magenta]")
-                                time.sleep(0.5) # Give the operator time to view the fluid terminal animation
-                        
-                        elif last_msg.content and last_msg.type == "ai":
-                            final_ai_reply = Dispatcher._extract_text_content(last_msg.content)
+            # Streaming without console.status context to prevent interactive input hijacking
+            for event in coding_graph.stream(initial_state, stream_mode="values"):
+                if "messages" in event:
+                    last_msg = event["messages"][-1]
+                    
+                    if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
+                        for tool_call in last_msg.tool_calls:
+                            console.print(f"[bold yellow]⚙️ Invoking Tool:[/bold yellow] [magenta]{tool_call['name']}[/magenta] with args: {tool_call['args']}")
+                    
+                    elif last_msg.content and last_msg.type == "ai":
+                        final_ai_reply = Dispatcher._extract_text_content(last_msg.content)
             
             if final_ai_reply.strip():
                 console.print("\n[bold green]⚡ Electrify Agent Response Outline:[/bold green]")
@@ -68,11 +65,11 @@ class Dispatcher:
 
         elif action == "parallel_coding":
             console.print(f"\n[bold magenta]🛠️ [Dispatcher] Spawning Parallel Multi-Task Pipeline Module[/bold magenta]")
+            console.print("[yellow]🧠 Mapping dependencies and planning task topology...[/yellow]")
             
-            with console.status("[bold yellow]🧠 Mapping dependencies and planning task topology...[/bold yellow]"):
-                llm, _ = model_selector("planning") 
-                structured_planner = llm.with_structured_output(SubTasks)
-                plan = structured_planner.invoke(f"Deconstruct this project workflow into a linear sequence of atomic tasks: {goal}")
+            llm, _ = model_selector("planning") 
+            structured_planner = llm.with_structured_output(SubTasks)
+            plan = structured_planner.invoke(f"Deconstruct this project workflow into a linear sequence of atomic tasks: {goal}")
             
             artifacts = {}
             
@@ -82,22 +79,19 @@ class Dispatcher:
                 initial_state = {"messages": [HumanMessage(content=task)]}
                 final_ai_reply = ""
                 
-                # SELF-HEALING LOGIC INTERFACE: Allow the agent loop to self-correct up to 3 diagnostic cycles
-                with console.status(f"[bold core]🔨 Processing Task Block {i}...[/bold core]") as status:
-                    for event in coding_graph.stream(initial_state, stream_mode="values"):
-                        if "messages" in event:
-                            last_msg = event["messages"][-1]
-                            
-                            if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
-                                for tool_call in last_msg.tool_calls:
-                                    status.update(f"[bold yellow]⚙️ Task {i} Tool Call:[/bold yellow] [cyan]{tool_call['name']}[/cyan]")
-                            
-                            elif last_msg.content and last_msg.type == "ai":
-                                final_ai_reply = Dispatcher._extract_text_content(last_msg.content)
-                                # Check if output context reports a failing test suite execution
-                                if "EXIT CODE: 1" in final_ai_reply or "FAIL" in final_ai_reply.upper():
-                                    status.update("[bold red]❌ Failure caught in test assets. Deploying self-healing patch cycles...[/bold red]")
-                                    time.sleep(1)
+                # Continuous, transparent stream logging. Safe for self-healing loops and interactive keyboard inputs.
+                for event in coding_graph.stream(initial_state, stream_mode="values"):
+                    if "messages" in event:
+                        last_msg = event["messages"][-1]
+                        
+                        if hasattr(last_message:=last_msg, "tool_calls") and last_message.tool_calls:
+                            for tool_call in last_message.tool_calls:
+                                console.print(f"[bold yellow]⚙️ [Task {i}] Tool Call:[/bold yellow] [cyan]{tool_call['name']}[/cyan]")
+                        
+                        elif last_msg.content and last_msg.type == "ai":
+                            final_ai_reply = Dispatcher._extract_text_content(last_msg.content)
+                            if "EXIT CODE: 1" in final_ai_reply or "FAIL" in final_ai_reply.upper():
+                                console.print("[bold red]❌ Failure caught in execution. Deploying self-healing patch cycles...[/bold red]")
                 
                 if final_ai_reply.strip():
                     console.print(f"\n[bold green]✅ Pipeline Step {i} Settled Successfully:[/bold green]")
