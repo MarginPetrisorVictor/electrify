@@ -1,5 +1,8 @@
 # Electrify
 
+## Overview
+Electrify is an intelligent agentic framework designed for autonomous code development and project management. It leverages LLMs to orchestrate complex tasks, manage workspace state, and handle Git version control, enabling a more efficient and automated software development lifecycle.
+
 ## Welcome
 Welcome to the Electrify project. Donations are well appreciated!
 
@@ -15,4 +18,4 @@ To set up the project, follow these steps:
 3. Configure your environment as needed.
 
 ## Owner
-Repository Owner: User
+Repository Owner: Margin Petrisor-Victor
