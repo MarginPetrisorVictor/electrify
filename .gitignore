@@ -352,6 +352,10 @@ paket-files/
 **/.cr/personal
 
 # Python Tools for Visual Studio (PTVS)
+*.egg-info/
+.eggs/
+build/
+dist/
 **/__pycache__/
 *.pyc
 
