@@ -2,7 +2,7 @@ import os
 from git import Repo, GitCommandError
 from langchain_core.tools import tool
 
-def _get_repo() -> Repo:
+def get_repo() -> Repo:
     try:
         return Repo(os.getcwd(), search_parent_directories=True)
     except Exception:
@@ -12,7 +12,7 @@ def _get_repo() -> Repo:
 def get_git_status() -> str:
     """Returns the current git status, including staged, unstaged, and untracked files."""
     try:
-        repo = _get_repo()
+        repo = get_repo()
         status_msg = f"On branch: {repo.active_branch.name}\n"
         
         diff_staged = repo.git.diff("--cached", name_status=True)
@@ -30,7 +30,7 @@ def get_git_status() -> str:
 def create_and_checkout_branch(branch_name: str) -> str:
     """Creates a brand new git branch and hooks the environment to it immediately."""
     try:
-        repo = _get_repo()
+        repo = get_repo()
         # Clean naming schema optimization
         clean_branch = branch_name.strip().replace(" ", "-").lower()
         new_branch = repo.create_head(clean_branch)
@@ -43,7 +43,7 @@ def create_and_checkout_branch(branch_name: str) -> str:
 def commit_all_changes(message: str) -> str:
     """Stages genuine modifications while completely ignoring development artifacts via .gitignore rules."""
     try:
-        repo = _get_repo()
+        repo = get_repo()
         repo.git.add(".") 
         
         # Double check if anything was actually staged to avoid empty commit crashes
@@ -62,7 +62,7 @@ def create_merge_request(title: str, description: str) -> str:
     and instantiates an isolated web link to quickly launch/review the Merge Request.
     """
     try:
-        repo = _get_repo()
+        repo = get_repo()
         active_branch = repo.active_branch.name
         
         # Guardrail check against deploying directly over master/main production trunks
