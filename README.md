@@ -6,6 +6,16 @@ Electrify is an intelligent agentic framework designed for autonomous code devel
 ## Welcome
 Welcome to the Electrify project. Donations are well appreciated!
 
+## Prerequisites
+
+Before setting up the project, ensure you have the following:
+
+- **Python 3.8+**
+- **Git**
+- **API Tokens**:
+    - **OpenAI API Key** (or another supported LLM provider) - Required for agentic orchestration.
+    - **GitHub Token** (optional) - Required for Git-related automation features (creating merge requests, etc.).
+
 ## Setup Guide
 
 To set up the project, follow these steps:
@@ -15,7 +25,7 @@ To set up the project, follow these steps:
    ```bash
    pip install -r requirements.txt
    ```
-3. Configure your environment as needed.
+3. Configure your environment variables (e.g., set `OPENAI_API_KEY` and `GITHUB_TOKEN` in your environment or a `.env` file).
 
 ## Owner
 Repository Owner: Margin Petrisor-Victor
