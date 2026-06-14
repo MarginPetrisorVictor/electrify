@@ -4,6 +4,8 @@ import typer
 from datetime import datetime
 from rich.console import Console
 from rich.markdown import Markdown
+from rich.panel import Panel
+from rich.text import Text
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -18,9 +20,26 @@ app = typer.Typer(help="Electrify AI Workflow Orchestrator")
 memory = MemoryManager()
 console = Console()
 
+def display_welcome():
+    logo = Text("⚡", style="bold yellow")
+    title = Text(" ELECTRIFY AI ", style="bold bright_blue")
+    
+    # Credentials section
+    creds_text = Text()
+    creds_text.append("Credentials: ", style="bold")
+    creds_text.append(f"{os.getenv('USER', 'Guest')}", style="italic green")
+    
+    welcome_panel = Panel(
+        Text.assemble(logo, title, "\n\n", creds_text),
+        title="Welcome",
+        subtitle="AI Workflow Orchestrator",
+        border_style="bright_blue"
+    )
+    console.print(welcome_panel)
+
 @app.callback(invoke_without_command=True)
 def start():
-    typer.secho("⚡ Welcome to Electrify Orchestrator ⚡", fg=typer.colors.BRIGHT_BLUE, bold=True)
+    display_welcome()
     
     try:
         sessions = memory.get_all_sessions()
@@ -33,7 +52,6 @@ def start():
     
     # Prompt the user to resume a session or start a new one
     if sessions:
-        # Changed \\n to \n
         typer.secho("\n📋 Existing Sessions:", fg=typer.colors.CYAN)
         for idx, s in enumerate(sessions):
             if idx >= 5:
@@ -41,7 +59,6 @@ def start():
             date_str = s['updated_at'].strftime("%Y-%m-%d %H:%M")
             typer.echo(f"  [{idx}] {s['name']} (Last updated: {date_str}) - ID: {s['_id']}")
         
-        # Changed \\n to \n
         choice = typer.prompt("\nChoose a session number to resume, or press Enter to create a new one", default="", show_default=False)
         if choice.isdigit() and int(choice) < len(sessions):
             selected_session = sessions[int(choice)]
@@ -55,13 +72,9 @@ def start():
 
     orchestrator = OrchestratorAgent()
 
-    # Boot up the orchestrator
-    orchestrator = OrchestratorAgent()
-
     # REPL Loop
     while True:
         try:
-            # Changed \\n to \n
             user_input = typer.prompt("\n(electrify) You", type=str)
             
             if user_input.lower() in ['exit', '/quit']:
@@ -91,7 +104,6 @@ def start():
             memory.save_to_session(session_id, role="assistant", content=decision.message, workflow_results=artifacts)
             
         except typer.Abort:
-            # Changed \\n to \n
             typer.secho("\nGoodbye! ⚡", fg=typer.colors.BRIGHT_BLUE)
             break
 

@@ -8,3 +8,5 @@ fastapi
 uvicorn
 pymongo
 rich
+google-api-core
+GitPython

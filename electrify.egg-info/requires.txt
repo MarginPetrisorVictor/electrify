@@ -1,0 +1,8 @@
+typer
+rich
+langchain-google-genai
+langchain-core
+langgraph
+pymongo
+python-dotenv
+pathspec
