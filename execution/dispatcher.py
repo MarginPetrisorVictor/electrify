@@ -11,6 +11,7 @@ from core.orchestrator import OrchestratorDecision
 from workflows.coding import coding_graph
 from core.llm import model_selector
 from tools.git_tools import (
+    get_repo,
     get_git_status, 
     create_and_checkout_branch, 
     commit_all_changes, 
