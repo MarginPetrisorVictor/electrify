@@ -41,10 +41,15 @@ def create_and_checkout_branch(branch_name: str) -> str:
 
 @tool
 def commit_all_changes(message: str) -> str:
-    """Stages all modified/untracked assets and registers a clean git commit snapshot."""
+    """Stages genuine modifications while completely ignoring development artifacts via .gitignore rules."""
     try:
         repo = _get_repo()
-        repo.git.add(A=True)  # Stage everything: modified, deleted, untracked
+        repo.git.add(".") 
+        
+        # Double check if anything was actually staged to avoid empty commit crashes
+        if not repo.index.diff("HEAD") and not repo.untracked_files:
+            return "No valid code modifications detected to commit."
+            
         commit = repo.index.commit(message)
         return f"Committed structural modifications cleanly. Commit SHA: {commit.hexsha}"
     except Exception as e:
